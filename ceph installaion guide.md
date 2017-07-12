@@ -105,3 +105,46 @@ sudo iptables -A INPUT -p tcp -s {ip-address}/{netmask} --dport 6800:7300 -j ACC
 sudo yum install iptables-services
 sudo service iptables save
 ```
+
+#### storage cluster on admin node
+![ceph node architecture][1]
+my-cluster will store all the keyring and log file, make sure you deploy node in the following directory.
+
+> mkdir my-cluster
+> cd my-cluster
+
+Do not call ceph-deploy with sudo or run it as root.
+
+> deploy monitor node
+```
+ceph-deploy new {monitor-node}
+```
+> install ceph package
+```
+ceph-deploy install node1 node2 node3 ...
+```
+> generate keyrings
+```
+ceph-deploy mon create-initial
+```
+> copy the configuration file and admin key to your admin node and Ceph Nodes
+```
+ceph-deploy admin node1 node2 node3
+```
+> deploy a manager daemon
+```
+ceph-deploy mgr create node1
+```
+> we assume you have an unused disk in each node called /dev/vdb, Be sure that the device is not currently in use and does not contain any important data.
+```
+ceph-deploy osd create node1:vdb node2:vdb node3:vdb
+```
+> check your cluster’s health
+```
+ssh node1 
+sudo ceph health
+sudo ceph -s
+```
+
+
+  [1]: ./images/Screen%20Shot%202017-07-12%20at%204.19.21%20PM_1.png "ceph node architecture"
