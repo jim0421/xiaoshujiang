@@ -79,6 +79,13 @@ Host node3
 
 #### preflight on all node
 > navigate to /etc/sysconfig/network-scripts and ensure that the ifcfg-{iface} file has ONBOOT set to yes.
+> navigate to /etc/sudoers and locate the Defaults requiretty setting. if you find it, change it to Defaults:ceph !requiretty or comment it out.
+> navigate to /etc/selinux/config and set SELINUX=permissive
+
+> install yum plugin priorities
+```
+sudo yum install yum-plugin-priorities
+```
 
 #### firewall setting
 > on monitor node
