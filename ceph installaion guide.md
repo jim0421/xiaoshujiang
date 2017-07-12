@@ -4,9 +4,6 @@ tags: ceph
 grammar_cjkRuby: true
 ---
 
-
-欢迎使用 **{小书匠}(xiaoshujiang)编辑器**
-
 #### preflight on admin node
 > Install and enable the Extra Packages for Enterprise Linux (EPEL) repository:
 ```
@@ -130,6 +127,8 @@ ceph-deploy mon create-initial
 > copy the configuration file and admin key to your admin node and Ceph Nodes
 ```
 ceph-deploy admin node1 node2 node3
+sudo chmod +r /etc/ceph/ceph.client.admin.keyring
+// on all nodes
 ```
 > deploy a manager daemon
 ```
@@ -145,6 +144,85 @@ ssh node1
 sudo ceph health
 sudo ceph -s
 ```
-
+> add a metadata server
+```
+ceph-deploy mds create {ceph-node}
+```
+> add ceph object gateway
+```
+ceph-deploy rgw create {gateway-node}
+```
 
   [1]: ./images/Screen%20Shot%202017-07-12%20at%204.19.21%20PM_1.png "ceph node architecture"
+  
+
+#### ceph configure a block device 
+> choose the OS version for filesystem features, for kernel 3.1, we use layering feature only
+```
+uname -r
+```
+> install ceph client node
+```
+ceph-deploy install ceph-client
+ceph-deploy admin ceph-client
+sudo chmod +r /etc/ceph/ceph.client.admin.keyring
+// on client node
+```
+> create a block device image
+```
+rbd create foo --size 4096 [-m {mon-IP}] [-k /path/to/ceph.client.admin.keyring] --image-format 2 --image-feature  layering
+```
+
+> map the image to a block device
+```
+sudo rbd map foo --name client.admin [-m {mon-IP}] [-k /path/to/ceph.client.admin.keyring]
+```
+
+> Use the block device by creating a file system on the ceph-client node
+```
+sudo mkfs.ext4 -m0 /dev/rbd/rbd/foo
+```
+
+> mount the file system on the ceph-client node
+```
+sudo mkdir /mnt/ceph-block-device
+sudo mount /dev/rbd/rbd/foo /mnt/ceph-block-device
+cd /mnt/ceph-block-device
+```
+
+#### ceph filesystem
+> choose the OS version for filesystem features, for kernel 3.1, we use layering feature only
+```
+uname -r
+```
+> install ceph client node
+```
+ceph-deploy install ceph-client
+ceph-deploy admin ceph-client
+sudo chmod +r /etc/ceph/ceph.client.admin.keyring
+// on client node
+```
+
+> create a filesystem
+```
+ceph osd pool create cephfs_data <pg_num>
+ceph osd pool create cephfs_metadata <pg_num>
+ceph fs new <fs_name> cephfs_metadata cephfs_data
+```
+
+> copy key value from ceph.client.admin.keyring and save the file
+with name admin.secret
+
+> mount as a kernel driver
+```
+sudo mkdir /mnt/mycephfs
+sudo mount -t ceph {ip-address-of-monitor}:6789:/ /mnt/mycephfs -o name=admin,secretfile=admin.secret
+```
+
+
+> ask xiaofeng for install ceph-fuse
+> userspace mount 
+```
+sudo mkdir ~/mycephfs
+sudo ceph-fuse -k ./ceph.client.admin.keyring -m {ip-address-of-monitor}:6789 ~/mycephfs
+```
